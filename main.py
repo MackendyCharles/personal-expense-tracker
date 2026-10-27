@@ -2,6 +2,7 @@ import csv
 from datetime import date
 import reports
 import database
+import monthly_reports
 
 
 def add_transaction(transaction_type, category, description, amount):
@@ -236,6 +237,42 @@ def export_csv_report():
         print(f"Could not export report: {error}")
 
 
+def display_monthly_report():
+    """Ask for a month and display its financial report."""
+
+    print("\n--- MONTHLY SPENDING REPORT ---")
+
+    try:
+        year = int(input("Enter year (e.g. 2026): ").strip())
+        month = int(input("Enter month (1-12): ").strip())
+
+        report = monthly_reports.generate_monthly_report(year, month)
+
+    except ValueError as error:
+        print(f"Invalid input: {error}")
+        return
+
+    print(
+        f"\nReport for {report['year']}-"
+        f"{report['month']:02d}"
+    )
+    print("-" * 35)
+    print(f"Transactions:    {report['transaction_count']}")
+    print(f"Total income:    ${report['total_income']:.2f}")
+    print(f"Total expenses:  ${report['total_expenses']:.2f}")
+    print(f"Monthly balance: ${report['balance']:.2f}")
+
+    print("\n--- SPENDING BY CATEGORY ---")
+
+    categories = report["spending_by_category"]
+
+    if not categories:
+        print("No expenses recorded for this month.")
+    else:
+        for category, amount in categories.items():
+            print(f"{category:<20} ${amount:.2f}")
+
+
 def main():
     database.initialize_database()
 
@@ -250,8 +287,9 @@ def main():
         print("7. Delete transaction")
         print("8. Filter transactions by date and category")
         print("9. Export transactions to CSV")
+        print("10. Monthly spending report")
 
-        choice = input("Choose an option (1-9): ").strip()
+        choice = input("Choose an option (1-10): ").strip()
 
         if choice in ("1", "2"):
             transaction_type = (
@@ -296,8 +334,11 @@ def main():
 
         elif choice == "9":
             export_csv_report()
+
+        elif choice == "10":
+            display_monthly_report()
         else:
-            print("Invalid option. Choose from 1 to 9.")
+            print("Invalid option. Choose from 1 to 10.")
 
 
 if __name__ == "__main__":
