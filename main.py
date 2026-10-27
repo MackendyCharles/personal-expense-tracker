@@ -1,6 +1,6 @@
-
+import csv
 from datetime import date
-
+import reports
 import database
 
 
@@ -151,6 +151,91 @@ def remove_transaction():
         print("Deletion cancelled.")
 
 
+def filter_transactions():
+    """Filter transactions by date range and category."""
+
+    print("\n--- FILTER TRANSACTIONS ---")
+    print("Leave a field empty to skip that filter.")
+
+    start_date = input("Start date (YYYY-MM-DD): ").strip()
+    end_date = input("End date (YYYY-MM-DD): ").strip()
+    category = input("Category: ").strip()
+
+    try:
+        if start_date:
+            date.fromisoformat(start_date)
+
+        if end_date:
+            date.fromisoformat(end_date)
+
+        if start_date and end_date and start_date > end_date:
+            print("Error: start date must not be after end date.")
+            return
+
+    except ValueError:
+        print("Invalid date. Use the format YYYY-MM-DD.")
+        return
+
+    transactions = database.get_filtered_transactions(
+        start_date=start_date or None,
+        end_date=end_date or None,
+        category=category or None,
+    )
+
+    print(f"\nMatching transactions: {len(transactions)}")
+
+    if not transactions:
+        print("No matching transactions found.")
+        return
+
+    for t in transactions:
+        print(
+            f'ID: {t["id"]} | {t["date"]} | '
+            f'{t["type"].upper()} | {t["category"]} | '
+            f'{t["description"]} | ${t["amount"]:.2f}'
+        )
+
+
+def export_csv_report():
+    """Ask for optional filters and export matching transactions."""
+
+    print("\n--- EXPORT CSV REPORT ---")
+    print("Leave a field empty to skip that filter.")
+
+    start_date = input("Start date (YYYY-MM-DD): ").strip()
+    end_date = input("End date (YYYY-MM-DD): ").strip()
+    category = input("Category: ").strip()
+
+    try:
+        if start_date:
+            date.fromisoformat(start_date)
+
+        if end_date:
+            date.fromisoformat(end_date)
+
+        if start_date and end_date and start_date > end_date:
+            print("Error: start date must not be after end date.")
+            return
+
+    except ValueError:
+        print("Invalid date. Use the format YYYY-MM-DD.")
+        return
+
+    try:
+        filepath, count = reports.export_transactions_to_csv(
+            start_date=start_date or None,
+            end_date=end_date or None,
+            category=category or None,
+        )
+
+        print(f"CSV report exported successfully!")
+        print(f"Transactions exported: {count}")
+        print(f"File location: {filepath.resolve()}")
+
+    except (OSError, csv.Error) as error:
+        print(f"Could not export report: {error}")
+
+
 def main():
     database.initialize_database()
 
@@ -163,8 +248,10 @@ def main():
         print("5. Exit")
         print("6. Edit transaction")
         print("7. Delete transaction")
+        print("8. Filter transactions by date and category")
+        print("9. Export transactions to CSV")
 
-        choice = input("Choose an option (1-7): ").strip()
+        choice = input("Choose an option (1-9): ").strip()
 
         if choice in ("1", "2"):
             transaction_type = (
@@ -204,8 +291,13 @@ def main():
         elif choice == "7":
             remove_transaction()
 
+        elif choice == "8":
+            filter_transactions()
+
+        elif choice == "9":
+            export_csv_report()
         else:
-            print("Invalid option. Choose from 1 to 7.")
+            print("Invalid option. Choose from 1 to 9.")
 
 
 if __name__ == "__main__":
